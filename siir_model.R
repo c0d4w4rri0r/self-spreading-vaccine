@@ -15,10 +15,10 @@ plauge <- function(pop = 66000000,
                    infB = 2.4 * 1000000, # http://dx.doi.org/10.1155/2015/504831 enough for all uni students
                    R0A = 2.011797, # spi-m
                    R0B = R0A, # spi-m
-                   incA = 0.8, # doi:10.1038/nature04017
-                   incB = incA, # doi:10.1038/nature04017
-                   durA = 1.8, # doi:10.1038/nature04017
-                   durB = durA, # doi:10.1038/nature04017
+                   incA = 0.64, # http://dx.doi.org/10.1016/j.epidem.2012.06.001 # used to be 0.8 no idea where from
+                   incB = incA, # http://dx.doi.org/10.1016/j.epidem.2012.06.001
+                   durA = 1.27, # http://dx.doi.org/10.1016/j.epidem.2012.06.001 used to be 1.8 no idea where from
+                   durB = durA, # http://dx.doi.org/10.1016/j.epidem.2012.06.001
                    CRA = 0.625, # spi-m RWC
                    CRB = CRA, # spi-m RWC
                    CFRA = 0.025, # spi-m RWC
@@ -64,10 +64,10 @@ plauge <- function(pop = 66000000,
 }
 
 senarios <- expand.grid(
-  delay = seq(7, 7 * 8, 1),
+  delay = seq(7, 7 * 20, 1),
   doses = seq(1.8 * 10^6, 2.8 * 10^6, 10^5),
-  latentPeriod = seq(0.8, 2, 0.2),
-  infectiousPeriod = seq(1.8, 4, 0.44)
+  latentPeriod = seq(0.64, 2, (2-0.64)/3),
+  infectiousPeriod = seq(1.27, 4, (4-1.27)/3)
 )
 tablename <- c(colnames(senarios), names(plauge(infB = 0)))
 impact <- sapply(1:nrow(senarios), function(i) {
@@ -75,8 +75,8 @@ impact <- sapply(1:nrow(senarios), function(i) {
     infB = 0, incA = senarios[i, "latentPeriod"],
     durA = senarios[i, "infectiousPeriod"]
   ) -
-    plauge(time_to_B = senarios[i, "delay"], infB = senarios[i, "doses"]),
-  incA = senarios[i, "latentPeriod"], durA = senarios[i, "infectiousPeriod"]
+    plauge(time_to_B = senarios[i, "delay"], infB = senarios[i, "doses"],
+  incA = senarios[i, "latentPeriod"], durA = senarios[i, "infectiousPeriod"])
   ))
 })
 impact <- as.data.frame(t(impact))
@@ -94,29 +94,34 @@ refDeaths<-plauge(
 #impact$persentageDeathsAvoided <- 100 * impact$deaths / (plauge(infB = 0)["deaths"])
 
 #contours of delay v doses for deaths
-ggplot(data = impact[impact$latentPeriod==0.8 & impact$infectiousPeriod==1.8,c("delay","doses","deaths")]) + geom_contour(aes(x = delay, y = doses, z = deaths, colour = stat(level))) + scale_colour_gradientn(colours = rainbow(5))
+ggplot(data = impact[impact$latentPeriod==0.64 & impact$infectiousPeriod==1.27,c("delay","doses","deaths")]) + geom_contour(aes(x = delay, y = doses, z = deaths, colour = stat(level))) + scale_colour_gradientn(colours = rainbow(5), name="deaths\nprevented")
 #contours of delay v doses for peek cases
-ggplot(data = impact[impact$latentPeriod==0.8 & impact$infectiousPeriod==1.8,]) + geom_contour(aes(x = delay, y = doses, z = peak_case, colour = stat(level))) + scale_colour_gradientn(colours = rainbow(5))
+ggplot(data = impact[impact$latentPeriod==0.64 & impact$infectiousPeriod==1.27,]) + geom_contour(aes(x = delay, y = doses, z = -peak_case, colour = stat(level))) + scale_colour_gradientn(colours = rainbow(5), name="Extra\ncases\nat peek")
 #contours of delay v doses for peek time
-ggplot(data = impact[impact$latentPeriod==0.8 & impact$infectiousPeriod==1.8,]) + geom_contour(aes(x = delay, y = doses, z = peak_time.time, colour = stat(level))) + scale_colour_gradientn(colours = rainbow(5))
+ggplot(data = impact[impact$latentPeriod==0.64 & impact$infectiousPeriod==1.27,]) + geom_contour(aes(x = delay, y = doses, z = peak_time.time, colour = stat(level))) + scale_colour_gradientn(colours = rainbow(5), name="peek\nshift\n(days)")
 # deaths by delay graph for 3 difrent does levels
 ggplot(data = impact[impact$doses %in% (c(1.8, 2.4, 2.8) * 10^6) &
-                       impact$latentPeriod == 0.8 &
-                       impact$infectiousPeriod == 1.8 &
+                       impact$latentPeriod == 0.64 &
+                       impact$infectiousPeriod == 1.27 &
                        impact$delay>=0, ]) + 
   geom_path(aes(delay, deaths, colour = factor(doses / 10^6),
                 group=factor(doses / 10^6))) +
   labs(color = "Doses") +
   xlab("Days till vaccination") +
   ylab("Deaths averted") +
-  scale_y_continuous(sec.axis = sec_axis(~./refDeaths, labels = scales::percent))
+  scale_y_continuous(sec.axis = sec_axis(~./refDeaths, labels = scales::percent)) +
+  scale_colour_discrete(name="Doses", breaks=c("1.8","2.4","2.8"), labels=c("1.8m","2.4m","2.8m"))
 # deaths by delay graph for one does but full range of latent / infectious periods
 impact2<-impact[impact$doses==2.4 * 10^6, ]
-impact2<-impact2[impact2$infectiousPeriod %in% c("1.8","4"),]
-impact2<-impact2[impact2$latentPeriod %in% c("0.8","2"),]
+impact2<-impact2[impact2$infectiousPeriod %in% c("1.27","4"),]
+impact2<-impact2[impact2$latentPeriod %in% c("0.64","2"),]
 ggplot(data = impact2[impact2$delay>=0,]) + 
   geom_path(aes(delay, deaths, colour = infectiousPeriod, linetype = latentPeriod,
-                group=interaction(latentPeriod,infectiousPeriod)))
+                group=interaction(latentPeriod,infectiousPeriod))) +
+  scale_color_discrete(name="Infectious\nPeriod", breaks=c("1.27","4"), labels=c("1.27 days","4 days")) +
+  scale_linetype_discrete(name="Latent\nPeriod", breaks=c("0.64","2"), labels=c("0.64 days","2 days")) +
+  scale_y_continuous(name="deaths averted") +
+  scale_x_continuous(limits=c(0,120))
 
 impact<-as.data.table(impact)
 
