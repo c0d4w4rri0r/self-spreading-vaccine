@@ -10,7 +10,7 @@ iarToR0 <- function(IAR, resistantProp = 0) {
   log((1 - resistantProp) / (1 - IAR - resistantProp)) / IAR
 }
 
-plauge <- function(pop = 66000000,
+plauge <- function(pop = 66900000,
                    infA = 1,
                    infB = 2.4 * 1000000, # http://dx.doi.org/10.1155/2015/504831 enough for all uni students
                    R0A = 2.011797, # spi-m
@@ -120,7 +120,7 @@ ggplot(data = impact2[impact2$delay>=0,]) +
                 group=interaction(latentPeriod,infectiousPeriod))) +
   scale_color_discrete(name="Infectious\nPeriod", breaks=c("1.27","4"), labels=c("1.27 days","4 days")) +
   scale_linetype_discrete(name="Latent\nPeriod", breaks=c("0.64","2"), labels=c("0.64 days","2 days")) +
-  scale_y_continuous(name="deaths averted") +
+  scale_y_continuous(name="deaths averted", sec.axis = sec_axis(~./refDeaths, labels = scales::percent)) +
   scale_x_continuous(limits=c(0,120))
 
 impact<-as.data.table(impact)
