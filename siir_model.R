@@ -93,13 +93,23 @@ refDeaths<-plauge(
 
 #impact$persentageDeathsAvoided <- 100 * impact$deaths / (plauge(infB = 0)["deaths"])
 
+graphWidth<-8.3
+graphHeight<-5.3
+
 #contours of delay v doses for deaths
+pdf("output/doses-delay-contours.pdf",width = graphWidth,height=graphHeight)
 ggplot(data = impact[impact$latentPeriod==0.64 & impact$infectiousPeriod==1.27,c("delay","doses","deaths")]) + geom_contour(aes(x = delay, y = doses, z = deaths, colour = stat(level))) + scale_colour_gradientn(colours = rainbow(5), name="deaths\nprevented")
+dev.off()
 #contours of delay v doses for peek cases
+pdf("output/doses-delay-extra-cases.pdf",width = graphWidth,height=graphHeight)
 ggplot(data = impact[impact$latentPeriod==0.64 & impact$infectiousPeriod==1.27,]) + geom_contour(aes(x = delay, y = doses, z = -peak_case, colour = stat(level))) + scale_colour_gradientn(colours = rainbow(5), name="Extra\ncases\nat peek")
+dev.off()
 #contours of delay v doses for peek time
+pdf("output/doses-delay-contours-shift.pdf",width = graphWidth,height=graphHeight)
 ggplot(data = impact[impact$latentPeriod==0.64 & impact$infectiousPeriod==1.27,]) + geom_contour(aes(x = delay, y = doses, z = peak_time.time, colour = stat(level))) + scale_colour_gradientn(colours = rainbow(5), name="peek\nshift\n(days)")
+dev.off()
 # deaths by delay graph for 3 difrent does levels
+pdf("output/deaths-delay-curves-by-doses.pdf",width = graphWidth,height=graphHeight)
 ggplot(data = impact[impact$doses %in% (c(1.8, 2.4, 2.8) * 10^6) &
                        impact$latentPeriod == 0.64 &
                        impact$infectiousPeriod == 1.27 &
@@ -109,12 +119,15 @@ ggplot(data = impact[impact$doses %in% (c(1.8, 2.4, 2.8) * 10^6) &
   labs(color = "Doses") +
   xlab("Days till vaccination") +
   ylab("Deaths averted") +
+  scale_x_continuous(limits=c(0,50)) +
   scale_y_continuous(sec.axis = sec_axis(~./refDeaths, labels = scales::percent)) +
   scale_colour_discrete(name="Doses", breaks=c("1.8","2.4","2.8"), labels=c("1.8m","2.4m","2.8m"))
+dev.off()
 # deaths by delay graph for one does but full range of latent / infectious periods
 impact2<-impact[impact$doses==2.4 * 10^6, ]
 impact2<-impact2[impact2$infectiousPeriod %in% c("1.27","4"),]
 impact2<-impact2[impact2$latentPeriod %in% c("0.64","2"),]
+pdf("output/deaths-delay-curves-by-periods.pdf",width = graphWidth,height=graphHeight)
 ggplot(data = impact2[impact2$delay>=0,]) + 
   geom_path(aes(delay, deaths, colour = infectiousPeriod, linetype = latentPeriod,
                 group=interaction(latentPeriod,infectiousPeriod))) +
@@ -122,6 +135,7 @@ ggplot(data = impact2[impact2$delay>=0,]) +
   scale_linetype_discrete(name="Latent\nPeriod", breaks=c("0.64","2"), labels=c("0.64 days","2 days")) +
   scale_y_continuous(name="deaths averted", sec.axis = sec_axis(~./refDeaths, labels = scales::percent)) +
   scale_x_continuous(limits=c(0,120))
+dev.off()
 
 impact<-as.data.table(impact)
 
