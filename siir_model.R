@@ -140,3 +140,22 @@ dev.off()
 impact<-as.data.table(impact)
 
 impact[,lapply(.SD, sd),by=.(delay,doses),.SDcols=names(plauge(infB = 0))]
+
+load("filteredmidyearestimates2017.rData")
+impact3<-impact[doses==2.4 * 10^6 & latentPeriod == 0.64 & infectiousPeriod == 1.27 & delay>=0,
+                .(delay,deaths)]
+temp2$delay<-sapply(temp2$population,function(i){
+  impact3[abs(deaths-i)==min(abs(deaths-i)),delay]
+})
+
+# deaths by delay graph for 3 difrent does levels
+pdf("output/deaths-delay-curves-with-city.pdf",width = graphWidth,height=graphHeight)
+ggplot() + 
+  geom_path(data = impact3, aes(delay, deaths)) +
+  geom_text(data = temp2, mapping=aes(delay, population, label = area), hjust = 0, nudge_x=1) +
+  geom_point(data = temp2, mapping=aes(delay, population)) +
+  xlab("Days till vaccination") +
+  ylab("Deaths averted") +
+  scale_x_continuous(limits=c(0,50)) +
+  scale_y_continuous(sec.axis = sec_axis(~./refDeaths, labels = scales::percent))
+dev.off()
